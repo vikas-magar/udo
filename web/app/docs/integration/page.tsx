@@ -22,54 +22,78 @@ export default function IntegrationPage() {
         UDO acts as an <strong>Intelligent Context Valve</strong> or Middleware that sits between your Data Source and your LLM.
       </p>
 
-      {/* Visual Flow Diagram */}
-      <div className="my-12 p-8 bg-black/40 rounded-3xl border border-gray-800 relative shadow-2xl">
-        <div className="flex flex-col items-center space-y-8">
-          
-          <div className="flex items-center space-x-4 w-full justify-center">
-            <div className="px-4 py-2 bg-blue-600 rounded-lg text-sm font-bold shadow-lg shadow-blue-900/20">User Query</div>
-            <div className="h-px w-8 bg-gray-700"></div>
-            <div className="px-4 py-2 bg-zinc-800 rounded-lg text-sm font-bold border border-gray-700">AI Agent / RAG</div>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <div className="text-[10px] text-gray-500 uppercase font-bold mb-2">1. Fetch Raw Data</div>
-            <div className="h-8 w-px bg-gradient-to-b from-gray-700 to-blue-500"></div>
-          </div>
-
-          <div className="px-6 py-3 bg-zinc-900 rounded-xl border border-gray-700 flex flex-col items-center">
-            <span className="text-xs text-gray-500 mb-1 uppercase font-bold tracking-widest">Data Source</span>
-            <span className="text-sm font-mono text-blue-400">S3 / Kafka / SQL</span>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <div className="text-[10px] text-red-500 uppercase font-bold mb-2 italic">2. Bloated Raw Dump (Noise)</div>
-            <div className="h-12 w-px bg-gradient-to-b from-blue-500 to-purple-500 relative">
-               <div className="absolute -right-32 top-1/2 -translate-y-1/2 flex items-center space-x-3">
-                  <div className="h-px w-8 bg-purple-500"></div>
-                  <div className="px-3 py-1 bg-purple-900/30 border border-purple-500 rounded text-[10px] font-bold text-purple-300">3. Intent ("Analyze Sales")</div>
-               </div>
+      {/* Professional System Flow Diagram */}
+      <div className="my-16 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 blur-3xl rounded-full opacity-50"></div>
+        
+        <div className="relative bg-[#0F172A] border border-slate-800 rounded-2xl p-8 md:p-12 shadow-2xl overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-center relative z-10">
+            
+            {/* Step 1: User/Agent */}
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center border border-slate-600 shadow-lg relative group">
+                <span className="text-2xl">👤</span>
+                <div className="absolute -bottom-2 px-2 py-0.5 bg-blue-600 text-[10px] font-bold text-white rounded-full">User Query</div>
+              </div>
+              <div className="h-16 w-0.5 md:w-full md:h-0.5 bg-slate-700/50"></div>
             </div>
-          </div>
 
-          <div className="px-10 py-6 bg-gradient-to-br from-blue-600 to-purple-700 rounded-2xl shadow-2xl shadow-blue-500/10 flex flex-col items-center border border-white/10 animate-pulse-slow">
-            <span className="text-lg font-black tracking-tighter text-white">UDO ENGINE</span>
-            <span className="text-[10px] text-blue-100 uppercase tracking-widest mt-1">4. Semantic Slicing & Masking</span>
-          </div>
+            {/* Step 2: Data Source */}
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="p-4 rounded-xl bg-slate-900 border border-slate-700 w-full">
+                <div className="text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">Source</div>
+                <div className="text-slate-200 font-mono text-sm">S3 / SQL</div>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] text-red-400 font-medium mb-1">Raw Dump (50MB)</span>
+                <div className="h-12 w-0.5 bg-gradient-to-b from-red-500/50 to-transparent"></div>
+              </div>
+            </div>
 
-          <div className="flex flex-col items-center">
-            <div className="h-12 w-px bg-gradient-to-b from-purple-500 to-green-500"></div>
-            <div className="text-[10px] text-green-400 uppercase font-bold mt-2">5. Perfect Context Slice (Signal)</div>
-          </div>
+            {/* Step 3: UDO Engine (Central) */}
+            <div className="md:col-span-1 flex flex-col items-center justify-center p-6 rounded-2xl bg-gradient-to-b from-blue-900/20 to-purple-900/20 border border-blue-500/30 shadow-blue-900/20 shadow-xl backdrop-blur-sm transform md:scale-110">
+              <div className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-2">UDO Engine</div>
+              <div className="space-y-2 w-full">
+                <div className="flex items-center justify-between text-[10px] text-slate-300 bg-black/40 px-2 py-1 rounded border border-white/5">
+                  <span>Intent Analysis</span>
+                  <span className="text-green-400">✓</span>
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-slate-300 bg-black/40 px-2 py-1 rounded border border-white/5">
+                  <span>Semantic Pruning</span>
+                  <span className="text-green-400">✓</span>
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-slate-300 bg-black/40 px-2 py-1 rounded border border-white/5">
+                  <span>PII Masking</span>
+                  <span className="text-green-400">✓</span>
+                </div>
+              </div>
+            </div>
 
-          <div className="flex items-center space-x-4 w-full justify-center">
-            <div className="px-4 py-2 bg-zinc-800 rounded-lg text-sm font-bold border border-gray-700">AI Agent</div>
-            <div className="h-px w-8 bg-gray-700"></div>
-            <div className="px-4 py-2 bg-green-600 rounded-lg text-sm font-bold shadow-lg shadow-green-900/20">LLM</div>
-            <div className="h-px w-8 bg-gray-700"></div>
-            <div className="px-4 py-2 bg-zinc-800 rounded-lg text-sm font-bold border border-gray-700">Answer</div>
-          </div>
+            {/* Step 4: Output */}
+            <div className="flex flex-col-reverse md:flex-col items-center text-center space-y-4">
+              <div className="flex flex-col items-center mb-4 md:mb-0">
+                <span className="text-[10px] text-green-400 font-medium mb-1">Clean Slice (50KB)</span>
+                <div className="h-12 w-0.5 bg-gradient-to-t md:bg-gradient-to-b from-green-500/50 to-transparent"></div>
+              </div>
+              <div className="p-4 rounded-xl bg-slate-900 border border-slate-700 w-full">
+                <div className="text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">Context</div>
+                <div className="text-slate-200 font-mono text-sm">Optimized JSON</div>
+              </div>
+            </div>
 
+            {/* Step 5: LLM */}
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="h-16 w-0.5 md:w-full md:h-0.5 bg-slate-700/50 order-2 md:order-1"></div>
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center border border-indigo-400 shadow-lg shadow-indigo-900/30 relative order-1 md:order-2">
+                <span className="text-2xl font-bold text-white">AI</span>
+                <div className="absolute -top-2 px-2 py-0.5 bg-white text-[10px] font-bold text-black rounded-full">LLM</div>
+              </div>
+            </div>
+
+          </div>
+          
+          {/* Connecting Lines (Desktop only usually, but simplified here) */}
+          <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-800 -z-0 hidden md:block"></div>
         </div>
       </div>
 
