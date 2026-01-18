@@ -3,7 +3,7 @@ FROM rust:1.83-slim-bookworm as builder
 
 WORKDIR /usr/src/udo
 
-# Install build dependencies (needed for candle/openssl)
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
@@ -11,8 +11,9 @@ RUN apt-get update && apt-get install -y \
     make \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy manifests first for caching
-COPY ../Cargo.toml Cargo.lock ./
+# Copy manifests
+# Assuming build context is project root (.)
+COPY Cargo.toml Cargo.lock ./
 
 # Create dummy src to build dependencies
 RUN mkdir src && \
@@ -20,32 +21,29 @@ RUN mkdir src && \
     echo "pub fn dummy() {}" > src/lib.rs
 
 # Build dependencies
-RUN cargo build --release
+RUN cargo build --release --features full
 
 # Remove dummy files
 RUN rm -rf src
 
 # Copy actual source code
-COPY ../src ./src
+COPY src ./src
+COPY config ./config
 
 # Build the actual application
-# touch files to ensure cargo rebuilds them
 RUN touch src/main.rs src/lib.rs
-RUN cargo build --release
+RUN cargo build --release --features full
 
-# Stage 2: Runtime
-FROM debian:bookworm-slim
+# Stage 2: Runtime (Distroless)
+FROM gcr.io/distroless/cc-debian12
 
 WORKDIR /app
 
-# Install runtime dependencies (OpenSSL)
-RUN apt-get update && apt-get install -y \
-    libssl3 \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
 # Copy binary from builder
-COPY --from=builder /usr/src/udo/target/release/udo-cli /usr/local/bin/udo
+COPY --from=builder /usr/src/udo/target/release/udo-cli /app/udo
+
+# Copy config if needed (optional)
+# COPY --from=builder /usr/src/udo/config /app/config
 
 # Set entrypoint
-ENTRYPOINT ["udo"]
+ENTRYPOINT ["/app/udo"]

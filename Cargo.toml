@@ -28,7 +28,7 @@ duckdb = { version = "1.0.0", features = ["bundled"], optional = true }
 actix-web = { version = "4", optional = true }
 actix-cors = { version = "0.7", optional = true }
 rdkafka = { version = "0.38.0", features = ["tokio"], optional = true }
-object_store = { version = "0.13.0", features = ["aws", "gcp", "azure"], optional = true }
+object_store = { version = "0.13.0", optional = true }
 url = { version = "2.5", optional = true }
 futures = "0.3.31"
 num_cpus = "1.17.0"
@@ -47,7 +47,10 @@ db = ["duckdb"]
 server = ["actix-web", "actix-cors", "db"]
 kafka = ["rdkafka"]
 cloud = ["object_store", "url"]
-full = ["semantic", "ner", "server", "kafka", "cloud"]
+aws = ["cloud", "object_store/aws"]
+gcp = ["cloud", "object_store/gcp"]
+azure = ["cloud", "object_store/azure"]
+full = ["semantic", "ner", "server", "kafka", "cloud", "aws", "gcp", "azure"]
 
 [dev-dependencies]
 tempfile = "3.10"

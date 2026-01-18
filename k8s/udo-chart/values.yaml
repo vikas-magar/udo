@@ -1,0 +1,18 @@
+replicaCount: 1
+
+image:
+  repository: udo-engine
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+config:
+  kafka:
+    brokers: "kafka:9092"
+    group_id: "udo-consumer"
+    topic: "raw-data"
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  kafkaLagThreshold: 10

@@ -1,0 +1,21 @@
+{{- if .Values.autoscaling.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "udo.fullname" . }}
+  labels:
+    {{- include "udo.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ include "udo.fullname" . }}
+  minReplicaCount: {{ .Values.autoscaling.minReplicas }}
+  maxReplicaCount: {{ .Values.autoscaling.maxReplicas }}
+  triggers:
+  - type: kafka
+    metadata:
+      bootstrapServers: {{ .Values.config.kafka.brokers }}
+      consumerGroup: {{ .Values.config.kafka.group_id }}
+      topic: {{ .Values.config.kafka.topic }}
+      lagThreshold: "{{ .Values.autoscaling.kafkaLagThreshold }}"
+      offsetResetPolicy: earliest
+{{- end }}
