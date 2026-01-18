@@ -19,28 +19,34 @@ fn default_batch_size() -> usize {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum SourceConfig {
-    File { path: PathBuf },
+    File {
+        path: PathBuf,
+    },
     #[cfg(feature = "kafka")]
-    Kafka { brokers: String, group_id: String, topic: String },
+    Kafka {
+        brokers: String,
+        group_id: String,
+        topic: String,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ProcessorConfig {
-    PiiMasker { 
+    PiiMasker {
         mode: String,
         #[serde(default)]
         use_ner: bool,
         #[serde(default)]
-        model_path: Option<PathBuf>
+        model_path: Option<PathBuf>,
     },
     #[cfg(feature = "semantic")]
-    SemanticPruner { 
-        query: String, 
+    SemanticPruner {
+        query: String,
         #[serde(default = "default_threshold")]
         threshold: f32,
         #[serde(default)]
-        model_path: Option<PathBuf>
+        model_path: Option<PathBuf>,
     },
 }
 
@@ -52,7 +58,11 @@ fn default_threshold() -> f32 {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum SinkConfig {
-    File { path: PathBuf },
+    File {
+        path: PathBuf,
+    },
     #[cfg(feature = "cloud")]
-    Cloud { url: String },
+    Cloud {
+        url: String,
+    },
 }

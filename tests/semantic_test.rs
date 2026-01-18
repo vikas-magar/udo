@@ -22,12 +22,18 @@ fn test_semantic_embedding() {
     let analyzer = IntentAnalyzer::new(model_path).expect("Failed to load model");
 
     let text1 = "The cat sits on the mat";
-    let text2 = "A kitten is resting on the rug"; 
-    let text3 = "The stock market crashed today"; 
+    let text2 = "A kitten is resting on the rug";
+    let text3 = "The stock market crashed today";
 
-    let emb1 = analyzer.get_embedding(text1).expect("Failed to embed text1");
-    let emb2 = analyzer.get_embedding(text2).expect("Failed to embed text2");
-    let emb3 = analyzer.get_embedding(text3).expect("Failed to embed text3");
+    let emb1 = analyzer
+        .get_embedding(text1)
+        .expect("Failed to embed text1");
+    let emb2 = analyzer
+        .get_embedding(text2)
+        .expect("Failed to embed text2");
+    let emb3 = analyzer
+        .get_embedding(text3)
+        .expect("Failed to embed text3");
 
     let sim_1_2 = cosine_similarity(&emb1, &emb2);
     let sim_1_3 = cosine_similarity(&emb1, &emb3);

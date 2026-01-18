@@ -1,19 +1,19 @@
-use std::path::PathBuf;
+use crate::core::error::{Result, UdoError};
+use crate::core::pipeline::DlqSink;
+use async_trait::async_trait;
+use simd_json::OwnedValue;
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use simd_json::OwnedValue;
-use crate::core::pipeline::DlqSink;
-use crate::core::error::{Result, UdoError};
-use async_trait::async_trait;
+use std::path::PathBuf;
 
 #[cfg(feature = "cloud")]
 use object_store::path::Path as ObjectPath;
 #[cfg(feature = "cloud")]
-use object_store::{ObjectStore, parse_url};
-#[cfg(feature = "cloud")]
-use url::Url;
+use object_store::{parse_url, ObjectStore};
 #[cfg(feature = "cloud")]
 use std::sync::Arc;
+#[cfg(feature = "cloud")]
+use url::Url;
 
 pub struct FileDlq {
     writer: BufWriter<File>,
@@ -62,10 +62,13 @@ impl DlqSink for CloudDlq {
     async fn write_dead_letter(&mut self, record: OwnedValue, reason: String) -> Result<()> {
         let json_str = simd_json::to_string(&record).map_err(UdoError::JsonParse)?;
         let content = format!(r#"{{"error": "{}", "record": {}}}"#, reason, json_str);
-        
+
         // Simple strategy: One file per error (not efficient for high error rates, but safe for DLQ)
         // A production version would buffer or rotate logs.
-        let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros();
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_micros();
         let filename = format!("{}/dlq_{}.json", self.base_path, timestamp);
         let path = ObjectPath::from(filename);
 

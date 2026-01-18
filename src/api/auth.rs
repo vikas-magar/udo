@@ -18,14 +18,19 @@ impl FromRequest for User {
     type Error = Error;
     type Future = Ready<Result<Self, Self::Error>>;
 
-    fn from_request(req: &actix_web::HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
+    fn from_request(
+        req: &actix_web::HttpRequest,
+        payload: &mut actix_web::dev::Payload,
+    ) -> Self::Future {
         let auth = BearerAuth::from_request(req, payload).into_inner();
 
         match auth {
             Ok(bearer) => {
                 let token = bearer.token();
-                let admin_key = env::var("UDO_ADMIN_KEY").unwrap_or_else(|_| "admin-secret".to_string());
-                let viewer_key = env::var("UDO_VIEWER_KEY").unwrap_or_else(|_| "viewer-secret".to_string());
+                let admin_key =
+                    env::var("UDO_ADMIN_KEY").unwrap_or_else(|_| "admin-secret".to_string());
+                let viewer_key =
+                    env::var("UDO_VIEWER_KEY").unwrap_or_else(|_| "viewer-secret".to_string());
 
                 if token == admin_key {
                     return ready(Ok(User { role: Role::Admin }));
@@ -36,11 +41,16 @@ impl FromRequest for User {
             Err(_) => {}
         }
 
-        ready(Err(actix_web::error::ErrorUnauthorized("Invalid or missing token")))
+        ready(Err(actix_web::error::ErrorUnauthorized(
+            "Invalid or missing token",
+        )))
     }
 }
 
-pub async fn validator(req: ServiceRequest, creds: BearerAuth) -> Result<ServiceRequest, (Error, ServiceRequest)> {
+pub async fn validator(
+    req: ServiceRequest,
+    creds: BearerAuth,
+) -> Result<ServiceRequest, (Error, ServiceRequest)> {
     let token = creds.token();
     let admin_key = env::var("UDO_ADMIN_KEY").unwrap_or_else(|_| "admin-secret".to_string());
     let viewer_key = env::var("UDO_VIEWER_KEY").unwrap_or_else(|_| "viewer-secret".to_string());

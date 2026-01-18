@@ -1,13 +1,13 @@
-use async_trait::async_trait;
-use simd_json::OwnedValue;
+use crate::core::error::{Result, UdoError};
+use crate::core::schema::infer_schema;
+use crate::utils::json::json_rows_to_batch;
 use arrow::datatypes::Schema;
 use arrow::record_batch::RecordBatch;
-use std::sync::Arc;
-use crate::core::error::{Result, UdoError};
-use crate::utils::json::json_rows_to_batch;
-use crate::core::schema::infer_schema;
+use async_trait::async_trait;
 use futures::StreamExt;
-use tracing::{info, error, debug};
+use simd_json::OwnedValue;
+use std::sync::Arc;
+use tracing::{debug, error, info};
 
 #[async_trait]
 pub trait InputSource: Send + Sync {
@@ -68,8 +68,10 @@ impl PipelineRunner {
         self.processors.push(processor);
     }
 
-    pub fn set_sink_factory<F>(&mut self, factory: F) 
-    where F: Fn(Arc<Schema>) -> Result<Box<dyn OutputSink>> + Send + Sync + 'static {
+    pub fn set_sink_factory<F>(&mut self, factory: F)
+    where
+        F: Fn(Arc<Schema>) -> Result<Box<dyn OutputSink>> + Send + Sync + 'static,
+    {
         self.sink_factory = Some(Box::new(factory));
     }
 
@@ -89,19 +91,21 @@ impl PipelineRunner {
                     }
                 }
             }
-            
+
             if warmup_records.is_empty() {
-                return Err(UdoError::Pipeline("Source yielded no records during warm-up".to_string()));
+                return Err(UdoError::Pipeline(
+                    "Source yielded no records during warm-up".to_string(),
+                ));
             }
 
             let schema_array = OwnedValue::Array(warmup_records.clone());
             initial_schema = Some(Arc::new(infer_schema(&schema_array, None)?));
-            
+
             let mut current_schema = initial_schema.unwrap();
             for proc in &self.processors {
                 current_schema = proc.update_schema(&current_schema)?;
             }
-            
+
             if let Some(factory) = &self.sink_factory {
                 self.sink = Some(factory(current_schema.clone())?);
             }
@@ -113,10 +117,11 @@ impl PipelineRunner {
                 }
             }
             if !processed_warmup.is_empty() {
-                self.flush_to_sink(&processed_warmup, &current_schema).await?;
+                self.flush_to_sink(&processed_warmup, &current_schema)
+                    .await?;
                 total_rows += processed_warmup.len();
             }
-            
+
             self.run_main_loop(current_schema, total_rows).await
         } else {
             let mut current_schema = initial_schema.unwrap();
@@ -130,7 +135,10 @@ impl PipelineRunner {
         }
     }
 
-    async fn process_record_sequential(&self, mut record: OwnedValue) -> Result<Option<OwnedValue>> {
+    async fn process_record_sequential(
+        &self,
+        mut record: OwnedValue,
+    ) -> Result<Option<OwnedValue>> {
         for proc in &self.processors {
             if let Some(processed) = proc.process(record).await? {
                 record = processed;
@@ -144,39 +152,42 @@ impl PipelineRunner {
     async fn run_main_loop(&mut self, schema: Arc<Schema>, mut total_rows: usize) -> Result<()> {
         let mut row_buffer = Vec::with_capacity(self.batch_size);
         let processors = Arc::new(self.processors.drain(..).collect::<Vec<_>>());
-        
+
         let source = std::mem::replace(&mut self.source, Box::new(EmptySource));
         let mut sink = self.sink.take();
         let mut dlq = self.dlq.take();
 
-        let stream = futures::stream::unfold(source, |mut source: Box<dyn InputSource>| async move {
-            match source.next_record().await {
-                Ok(Some(record)) => Some((record, source)),
-                _ => None,
-            }
-        });
-
-        let processed_stream = stream.map(|record| {
-            let procs = processors.clone();
-            tokio::spawn(async move {
-                let mut current_record = Some(record);
-                let num_procs = procs.len();
-                for i in 0..num_procs {
-                    if let Some(rec) = current_record.take() {
-                        let rec_clone = rec.clone();
-                        match procs[i].process(rec).await {
-                            Ok(res) => current_record = res,
-                            Err(e) => {
-                                return Err((rec_clone, e.to_string()));
-                            },
-                        }
-                    } else {
-                        break;
-                    }
+        let stream =
+            futures::stream::unfold(source, |mut source: Box<dyn InputSource>| async move {
+                match source.next_record().await {
+                    Ok(Some(record)) => Some((record, source)),
+                    _ => None,
                 }
-                Ok(current_record)
+            });
+
+        let processed_stream = stream
+            .map(|record| {
+                let procs = processors.clone();
+                tokio::spawn(async move {
+                    let mut current_record = Some(record);
+                    let num_procs = procs.len();
+                    for i in 0..num_procs {
+                        if let Some(rec) = current_record.take() {
+                            let rec_clone = rec.clone();
+                            match procs[i].process(rec).await {
+                                Ok(res) => current_record = res,
+                                Err(e) => {
+                                    return Err((rec_clone, e.to_string()));
+                                }
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    Ok(current_record)
+                })
             })
-        }).buffer_unordered(num_cpus::get() * 2);
+            .buffer_unordered(num_cpus::get() * 2);
 
         tokio::pin!(processed_stream);
 

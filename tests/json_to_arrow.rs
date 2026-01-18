@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use arrow::array::{Float64Array, Int64Array, StringArray};
 use arrow::datatypes::{DataType, Field, Schema};
-use udo::{parse_json, json_rows_to_batch};
 use simd_json::OwnedValue;
+use udo::{json_rows_to_batch, parse_json};
 
 #[test]
 fn test_json_to_record_batch() {

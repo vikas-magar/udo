@@ -1,9 +1,9 @@
-use async_trait::async_trait;
-use simd_json::{OwnedValue, prelude::*};
-#[cfg(feature = "ner")]
-use std::sync::Arc;
 use crate::core::error::{Result, UdoError};
 use crate::core::pipeline::DataProcessor;
+use async_trait::async_trait;
+use simd_json::{prelude::*, OwnedValue};
+#[cfg(feature = "ner")]
+use std::sync::Arc;
 use tracing::debug;
 
 pub struct PiiMasker {
@@ -14,7 +14,8 @@ pub struct PiiMasker {
 impl PiiMasker {
     pub fn new(mask_mode: &str) -> Result<Self> {
         Ok(Self {
-            email_regex: regex::Regex::new(r"(?i)[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}").map_err(|e| UdoError::Config(format!("Invalid regex: {}", e)))?,
+            email_regex: regex::Regex::new(r"(?i)[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}")
+                .map_err(|e| UdoError::Config(format!("Invalid regex: {}", e)))?,
             mask_mode: mask_mode.to_string(),
         })
     }
@@ -25,11 +26,11 @@ impl PiiMasker {
                 debug!("Email PII masked");
                 let masked = match self.mask_mode.as_str() {
                     "hash" => {
-                        use sha2::{Sha256, Digest};
+                        use sha2::{Digest, Sha256};
                         let mut hasher = Sha256::new();
                         hasher.update(s.as_bytes());
                         format!("{:x}", hasher.finalize())
-                    },
+                    }
                     _ => "****@masked.com".to_string(),
                 };
                 *value = OwnedValue::from(masked);
@@ -75,11 +76,11 @@ impl NerPiiMasker {
                 if !entities.is_empty() {
                     let masked = match self.mask_mode.as_str() {
                         "hash" => {
-                            use sha2::{Sha256, Digest};
+                            use sha2::{Digest, Sha256};
                             let mut hasher = Sha256::new();
                             hasher.update(s.as_bytes());
                             format!("{:x}", hasher.finalize())
-                        },
+                        }
                         _ => "[REDACTED]".to_string(),
                     };
                     *value = OwnedValue::from(masked);

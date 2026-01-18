@@ -1,18 +1,24 @@
-use simd_json::OwnedValue;
-use arrow::datatypes::{Schema, DataType, Field};
-use std::collections::BTreeMap;
-use simd_json::prelude::*;
-use simd_json::ValueType;
 use crate::core::error::{Result, UdoError};
+use arrow::datatypes::{DataType, Field, Schema};
+use simd_json::prelude::*;
+use simd_json::OwnedValue;
+use simd_json::ValueType;
+use std::collections::BTreeMap;
 
 pub fn infer_schema(json_val: &OwnedValue, max_rows: Option<usize>) -> Result<Schema> {
     let rows = match json_val {
         OwnedValue::Array(arr) => arr,
-        _ => return Err(UdoError::JsonParse(simd_json::Error::generic(simd_json::ErrorType::ExpectedArray))),
+        _ => {
+            return Err(UdoError::JsonParse(simd_json::Error::generic(
+                simd_json::ErrorType::ExpectedArray,
+            )))
+        }
     };
 
     if rows.is_empty() {
-        return Err(UdoError::Pipeline("Empty JSON array, cannot infer schema".to_string()));
+        return Err(UdoError::Pipeline(
+            "Empty JSON array, cannot infer schema".to_string(),
+        ));
     }
 
     // Use BTreeMap to ensure deterministic column order
@@ -31,7 +37,8 @@ pub fn infer_schema(json_val: &OwnedValue, max_rows: Option<usize>) -> Result<Sc
                     _ => DataType::Utf8, // Fallback
                 };
 
-                field_map.entry(key.to_string())
+                field_map
+                    .entry(key.to_string())
                     .and_modify(|existing_type| {
                         // Type Coercion / Widening logic
                         if *existing_type == DataType::Int64 && new_type == DataType::Float64 {
@@ -43,7 +50,8 @@ pub fn infer_schema(json_val: &OwnedValue, max_rows: Option<usize>) -> Result<Sc
         }
     }
 
-    let fields: Vec<Field> = field_map.into_iter()
+    let fields: Vec<Field> = field_map
+        .into_iter()
         .map(|(name, dt)| Field::new(name, dt, true))
         .collect();
 

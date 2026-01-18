@@ -1,7 +1,7 @@
 #[cfg(feature = "db")]
-use duckdb::{Connection, params};
-#[cfg(feature = "db")]
 use crate::core::error::{Result, UdoError};
+#[cfg(feature = "db")]
+use duckdb::{params, Connection};
 
 #[cfg(feature = "db")]
 #[derive(Clone)]
@@ -17,9 +17,15 @@ impl MetricsDb {
         })
     }
 
-    pub fn record_metric(&self, processed_rows: usize, latency_ms: f64, tokens_saved: usize, operation: &str) -> Result<()> {
+    pub fn record_metric(
+        &self,
+        processed_rows: usize,
+        latency_ms: f64,
+        tokens_saved: usize,
+        operation: &str,
+    ) -> Result<()> {
         let conn = Connection::open(&self.path).map_err(|e| UdoError::Unknown(e.to_string()))?;
-        
+
         conn.execute_batch(
             "CREATE SEQUENCE IF NOT EXISTS metrics_id_seq;
              CREATE TABLE IF NOT EXISTS metrics (
@@ -29,8 +35,9 @@ impl MetricsDb {
                 latency_ms DOUBLE,
                 tokens_saved BIGINT,
                 operation TEXT
-            );"
-        ).map_err(|e| UdoError::Unknown(e.to_string()))?;
+            );",
+        )
+        .map_err(|e| UdoError::Unknown(e.to_string()))?;
 
         conn.execute(
             "INSERT INTO metrics (processed_rows, latency_ms, tokens_saved, operation) VALUES (?, ?, ?, ?)",

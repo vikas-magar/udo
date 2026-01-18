@@ -8,12 +8,12 @@ processors:
     mode: "mask"
     use_ner: true
     # Optional: Local path to NER model directory (for air-gapped envs)
-    # model_path: "/path/to/bert-large-cased" 
+    model_path: "models/ner" 
   - type: semantic_pruner
     query: "find user browser and behavior"
     threshold: 0.85
     # Optional: Local path to embedding model directory
-    # model_path: "/path/to/all-MiniLM-L6-v2"
+    model_path: "models/semantic"
 
 sink:
   type: file

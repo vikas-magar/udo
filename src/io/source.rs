@@ -1,16 +1,16 @@
-use async_trait::async_trait;
-use std::path::PathBuf;
-use tokio::fs::File;
-use tokio::io::{AsyncBufReadExt, BufReader};
-use simd_json::OwnedValue;
 use crate::core::error::{Result, UdoError};
 use crate::core::pipeline::InputSource;
 use crate::utils::json::parse_json;
+use async_trait::async_trait;
+use simd_json::OwnedValue;
+use std::path::PathBuf;
+use tokio::fs::File;
+use tokio::io::{AsyncBufReadExt, BufReader};
 
 #[cfg(feature = "kafka")]
-use rdkafka::consumer::{StreamConsumer, Consumer};
-#[cfg(feature = "kafka")]
 use rdkafka::config::ClientConfig;
+#[cfg(feature = "kafka")]
+use rdkafka::consumer::{Consumer, StreamConsumer};
 #[cfg(feature = "kafka")]
 use rdkafka::message::Message;
 
@@ -33,11 +33,15 @@ impl FileSource {
 impl InputSource for FileSource {
     async fn next_record(&mut self) -> Result<Option<OwnedValue>> {
         self.line_buffer.clear();
-        let bytes_read = self.reader.read_line(&mut self.line_buffer).await.map_err(UdoError::Io)?;
+        let bytes_read = self
+            .reader
+            .read_line(&mut self.line_buffer)
+            .await
+            .map_err(UdoError::Io)?;
         if bytes_read == 0 {
             return Ok(None);
         }
-        
+
         match parse_json(self.line_buffer.as_bytes()) {
             Ok(val) => Ok(Some(val)),
             Err(_) => {
