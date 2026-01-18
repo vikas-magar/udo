@@ -42,7 +42,7 @@ export default function LandingPage() {
           </h1>
           <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
             UDO automatically <strong>masks PII</strong> and <strong>prunes context noise</strong> before it hits your LLM. 
-            Reduce OpenAI bills by 40% and improve Agent accuracy in milliseconds.
+            Reduce LLM token costs by 40% and improve Agent accuracy in milliseconds.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
             <Link 
