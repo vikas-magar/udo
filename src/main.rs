@@ -336,25 +336,25 @@ async fn main() -> Result<()> {
 
     // --- Pass 1: Schema Inference ---
     let mut schema = None;
-    if let Some(inp) = input_for_schema {
-        if args.scan_rows > 0 {
-            info!(limit = %args.scan_rows, "Inferring schema from input");
-            let mut infer_source = udo::io::source::FileSource::new(PathBuf::from(&inp)).await?;
-            let mut schema_rows = Vec::new();
-            while schema_rows.len() < args.scan_rows {
-                if let Some(record) = infer_source.next_record().await? {
-                    schema_rows.push(record);
-                } else {
-                    break;
-                }
+    if let Some(inp) = input_for_schema
+        && args.scan_rows > 0
+    {
+        info!(limit = %args.scan_rows, "Inferring schema from input");
+        let mut infer_source = udo::io::source::FileSource::new(PathBuf::from(&inp)).await?;
+        let mut schema_rows = Vec::new();
+        while schema_rows.len() < args.scan_rows {
+            if let Some(record) = infer_source.next_record().await? {
+                schema_rows.push(record);
+            } else {
+                break;
             }
-            if !schema_rows.is_empty() {
-                let schema_array = OwnedValue::Array(schema_rows);
-                schema = Some(Arc::new(
-                    udo::core::schema::infer_schema(&schema_array, None)
-                        .map_err(|e| anyhow::anyhow!(e))?,
-                ));
-            }
+        }
+        if !schema_rows.is_empty() {
+            let schema_array = OwnedValue::Array(schema_rows);
+            schema = Some(Arc::new(
+                udo::core::schema::infer_schema(&schema_array, None)
+                    .map_err(|e| anyhow::anyhow!(e))?,
+            ));
         }
     }
 
@@ -381,10 +381,10 @@ async fn main() -> Result<()> {
     info!(duration = ?elapsed, "Job completed");
 
     #[cfg(feature = "db")]
-    if let Some(db) = metrics_db {
-        if let Err(e) = db.record_metric(0, elapsed.as_millis() as f64, 0, "pipeline") {
-            error!(error = %e, "Failed to record metrics");
-        }
+    if let Some(db) = metrics_db
+        && let Err(e) = db.record_metric(0, elapsed.as_millis() as f64, 0, "pipeline")
+    {
+        error!(error = %e, "Failed to record metrics");
     }
 
     Ok(())

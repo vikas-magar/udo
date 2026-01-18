@@ -114,17 +114,17 @@ impl DataProcessor for SemanticProcessor {
             .keep_columns
             .lock()
             .map_err(|_| UdoError::Pipeline("SemanticProcessor mutex poisoned".to_string()))?;
-        if let Some(keep_cols) = keep_cols_guard.as_ref() {
-            if let Some(obj) = record.as_object_mut() {
-                let keys_to_remove: Vec<String> = obj
-                    .iter()
-                    .filter(|(k, _)| !keep_cols.contains(&k.to_string()))
-                    .map(|(k, _)| k.to_string())
-                    .collect();
+        if let Some(keep_cols) = keep_cols_guard.as_ref()
+            && let Some(obj) = record.as_object_mut()
+        {
+            let keys_to_remove: Vec<String> = obj
+                .iter()
+                .filter(|(k, _)| !keep_cols.contains(&k.to_string()))
+                .map(|(k, _)| k.to_string())
+                .collect();
 
-                for key in keys_to_remove {
-                    obj.remove(&key);
-                }
+            for key in keys_to_remove {
+                obj.remove(&key);
             }
         }
         Ok(Some(record))

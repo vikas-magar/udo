@@ -72,19 +72,19 @@ impl NerPiiMasker {
 
     fn mask_entities(&self, value: &mut OwnedValue) {
         if let Some(s) = value.as_str() {
-            if let Ok(entities) = self.analyzer.predict(s) {
-                if !entities.is_empty() {
-                    let masked = match self.mask_mode.as_str() {
-                        "hash" => {
-                            use sha2::{Digest, Sha256};
-                            let mut hasher = Sha256::new();
-                            hasher.update(s.as_bytes());
-                            format!("{:x}", hasher.finalize())
-                        }
-                        _ => "[REDACTED]".to_string(),
-                    };
-                    *value = OwnedValue::from(masked);
-                }
+            if let Ok(entities) = self.analyzer.predict(s)
+                && !entities.is_empty()
+            {
+                let masked = match self.mask_mode.as_str() {
+                    "hash" => {
+                        use sha2::{Digest, Sha256};
+                        let mut hasher = Sha256::new();
+                        hasher.update(s.as_bytes());
+                        format!("{:x}", hasher.finalize())
+                    }
+                    _ => "[REDACTED]".to_string(),
+                };
+                *value = OwnedValue::from(masked);
             }
         } else if let Some(obj) = value.as_object_mut() {
             for (_, val) in obj.iter_mut() {
