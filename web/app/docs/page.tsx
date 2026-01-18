@@ -17,9 +17,9 @@ export default function DocsIndex() {
         <h1 className="text-4xl font-bold mb-8">Documentation</h1>
         <div className="grid gap-6">
           <DocLink 
-            href="/docs/status" 
-            title="Project Status" 
-            description="Current development status, implemented features, known gaps, and readiness assessment." 
+            href="/docs/usage" 
+            title="Usage & Integration" 
+            description="Step-by-step guides for CLI usage, configuration, and integrating UDO into RAG pipelines." 
           />
           <DocLink 
             href="/docs/architecture" 
