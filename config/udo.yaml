@@ -1,0 +1,18 @@
+# UDO Pipeline Configuration Example
+source:
+  type: file
+  path: "sample_data.jsonl"
+
+processors:
+  - type: pii_masker
+    mode: "mask"
+    use_ner: true
+  - type: semantic_pruner
+    query: "find user browser and behavior"
+    threshold: 0.85
+
+sink:
+  type: file
+  path: "optimized_data.parquet"
+
+batch_size: 5000
