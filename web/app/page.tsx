@@ -37,25 +37,47 @@ export default function LandingPage() {
 
         <div className="max-w-5xl mx-auto text-center relative z-10">
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 text-white">
-            The <span className="text-blue-400">Universal Data Optimizer</span> <br/>for Secure Pipelines
+            Stop Wasting Tokens. <br/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Optimize Your RAG Pipeline.</span>
           </h1>
           <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
-            Automatically mask PII and prune irrelevant data using local AI models. 
-            Designed for air-gapped environments and high-performance ETL.
+            UDO automatically <strong>masks PII</strong> and <strong>prunes context noise</strong> before it hits your LLM. 
+            Reduce OpenAI bills by 40% and improve Agent accuracy in milliseconds.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
             <Link 
               href="/dashboard" 
               className="px-8 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg transition shadow-xl shadow-blue-900/20 hover:scale-105 transform duration-200"
             >
-              Get Started
+              Get Started for Free
             </Link>
             <Link 
               href="/docs" 
               className="px-8 py-4 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 font-medium text-lg transition hover:border-slate-500"
             >
-              View Documentation
+              Read the Docs
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Value Props / SEO Keywords */}
+      <section className="py-12 bg-[#0F172A]">
+        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-3 gap-8 text-center">
+          <div>
+            <div className="text-4xl mb-4">💸</div>
+            <h3 className="text-xl font-bold text-white mb-2">Slash API Costs</h3>
+            <p className="text-slate-400">Don't pay for JSON keys and system logs. UDO sends only the data that matters.</p>
+          </div>
+          <div>
+            <div className="text-4xl mb-4">🚀</div>
+            <h3 className="text-xl font-bold text-white mb-2">Sub-50ms Latency</h3>
+            <p className="text-slate-400">Built in Rust with Zero-Copy Arrow buffers. Faster than any Python ETL.</p>
+          </div>
+          <div>
+            <div className="text-4xl mb-4">🛡️</div>
+            <h3 className="text-xl font-bold text-white mb-2">GDPR/HIPAA Ready</h3>
+            <p className="text-slate-400">Redact PII locally. Sensitive data never leaves your VPC.</p>
           </div>
         </div>
       </section>
@@ -64,40 +86,40 @@ export default function LandingPage() {
       <section id="features" className="py-24 bg-[#1E293B]/30 border-y border-slate-800/50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">Built for Modern Data Compliance</h2>
-            <p className="text-slate-400">Security first, performance always.</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">The Ultimate Context Valve for AI</h2>
+            <p className="text-slate-400">Designed for Data Engineers and AI Architects.</p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
             <FeatureCard 
               icon="🔒"
-              title="Advanced PII Masking"
-              description="Detects and masks sensitive entities (Emails, Names, Locations) using Regex and BERT-based NER models."
+              title="Intelligent PII Masking"
+              description="Automatically detect and hash emails, credit cards, and names using local BERT models. No API calls required."
             />
             <FeatureCard 
               icon="🧠"
-              title="Semantic Optimization"
-              description="Describe your intent in plain English. UDO intelligently keeps only relevant columns using embedding models."
+              title="Semantic Slicing"
+              description="Filter columns based on meaning. If your agent needs 'User Contact', UDO drops 'Server Logs' automatically."
             />
             <FeatureCard 
               icon="🛡️"
-              title="Air-Gapped Ready"
-              description="Run entirely offline. Load AI models from local storage with no external dependencies or calls home."
+              title="Air-Gapped Security"
+              description="Run UDO entirely offline. Perfect for Banking, Defense, and Healthcare environments."
             />
             <FeatureCard 
               icon="⚡"
-              title="Rust Performance"
-              description="Built on Apache Arrow and Tokio for blazing fast, async processing and low memory footprint."
+              title="High-Throughput ETL"
+              description="Stream GBs of data from Kafka or S3 directly into Parquet or Arrow IPC for your Vector DB."
             />
             <FeatureCard 
               icon="☁️"
-              title="Cloud Native"
-              description="Seamlessly integrates with S3, GCS, and Kafka. Supports Dead Letter Queues for robust error handling."
+              title="Cloud Agnostic"
+              description="Deploy as a single binary, Docker container, or Kubernetes Sidecar. Works on AWS, GCP, and Azure."
             />
             <FeatureCard 
               icon="📊"
-              title="Real-time Metrics"
-              description="Built-in DuckDB metrics store and REST API for monitoring throughput, latency, and data savings."
+              title="Pipeline Observability"
+              description="Track token savings and latency in real-time with our built-in DuckDB analytics engine."
             />
           </div>
         </div>
