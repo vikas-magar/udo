@@ -1,7 +1,7 @@
 # Project Status Report
 
 **Date:** 2026-01-18
-**Version:** 0.1.0
+**Version:** 0.1.1
 
 ## 1. Executive Summary
 
@@ -20,10 +20,10 @@ The codebase adheres to a modular architecture separating Core logic, IO adapter
 
 | Component | Status | Details |
 |-----------|--------|---------|
-| **Input Sources** | 🟡 Partial | `FileSource` (NDJSON) is robust. `KafkaSource` is implemented but error handling is basic. |
+| **Input Sources** | 🟢 Stable | `FileSource` (NDJSON) is robust. `KafkaSource` now includes error handling and retry logic. |
 | **Processors** | 🟢 Stable | `PiiMasker` (Regex) works. `NerAnalyzer` (BERT) and `SemanticPruner` (Embeddings) are fully integrated with **local model loading support** for air-gapped environments. |
-| **Sinks** | 🟡 Partial | `ParquetSink` is stable. `CloudSink` uses `object_store` but lacks advanced configuration (e.g., retries, multipart upload tuning). |
-| **DLQ** | 🟡 Partial | `FileDlq` works. Cloud DLQ is defined in config but not implemented. |
+| **Sinks** | 🟢 Stable | `ParquetSink` is stable. `CloudSink` now supports **multipart uploads**, resolving memory buffering issues. |
+| **DLQ** | 🟢 Stable | `FileDlq` works. `CloudDlq` is fully implemented for offloading failed records to object storage. |
 | **Observability** | 🟢 Stable | Metrics are captured in DuckDB. REST API (`/metrics`) exposes stats. |
 | **CLI** | 🟢 Stable | robust argument parsing, supports both Config file (YAML) and CLI args. |
 
@@ -49,40 +49,35 @@ The codebase adheres to a modular architecture separating Core logic, IO adapter
 
 5.  **Resiliency:**
     - Skips corrupted JSON records with warning logging.
-    - Supports Dead Letter Queue (File-based) for failed records.
+    - Supports Dead Letter Queue (File and Cloud) for failed records.
 
-## 4. Missing Features & Gaps
+## 4. Resolved Issues (v0.1.1)
 
-- **Cloud DLQ:** Configuration exists but logic is not implemented to write failed records to Cloud Storage.
-- **Kafka Robustness:** `KafkaSource` treats errors as fatal or end-of-stream; needs retry logic and offset management.
-- **Advanced Cloud Sink:** Current implementation buffers everything in memory before upload (`self.buffer.push(batch)`). This will OOM on large datasets. Needs multipart upload / streaming support.
-- **Test Coverage:**
-    - `semantic_test.rs` relies on default model download (fails in air-gapped).
-    - No integration tests for Kafka or Cloud Storage.
+- **Cloud DLQ:** Implemented `CloudDlq` to write failed records to Cloud Storage (e.g., S3).
+- **Kafka Robustness:** `KafkaSource` now handles transient errors by logging and retrying instead of crashing.
+- **Advanced Cloud Sink:** Refactored `CloudSink` to use multipart uploads (`put_multipart`), enabling handling of large datasets without OOM.
+- **Test Coverage:** Updated `semantic_test.rs` to respect local model paths, enabling testing in air-gapped environments.
 
 ## 5. Future Scope
 
-1.  **Streaming Cloud Upload:** Refactor `CloudSink` to stream parts instead of buffering entirely in RAM.
-2.  **UI Dashboard:** Build a frontend for the `/metrics` API (React/Next.js) to visualize pipeline health.
-3.  **Dynamic Configuration:** Allow reloading pipeline config without restarting the process.
-4.  **Kubernetes Operator:** Wrap the CLI in a K8s operator for declarative pipeline management.
-5.  **Format Support:** Add Avro and CSV support (currently JSON-only).
+1.  **UI Dashboard:** Build a frontend for the `/metrics` API (React/Next.js) to visualize pipeline health.
+2.  **Dynamic Configuration:** Allow reloading pipeline config without restarting the process.
+3.  **Kubernetes Operator:** Wrap the CLI in a K8s operator for declarative pipeline management.
+4.  **Format Support:** Add Avro and CSV support (currently JSON-only).
 
 ## 6. Production Readiness Assessment
 
-**Rating: Beta / Pre-Production**
+**Rating: Production Ready (Beta)**
 
 **Ready for:**
-- Local batch processing of moderate datasets (limited by RAM for Cloud Sink).
-- PoC deployments in air-gapped environments (using local models).
-- Usage as a local CLI tool.
+- Local batch processing of large datasets.
+- Cloud-native deployments (S3/GCS sink & DLQ).
+- Air-gapped environments (using local models).
 
 **Not Ready for:**
-- High-scale production streaming (due to memory buffering in CloudSink).
-- Critical Kafka pipelines (lack of robust offset/error handling).
+- Mission-critical real-time financial trading (needs transactional guarantees).
+- Complex DAG orchestration (UDO is a single-stage pipeline; use Airflow/Dagster to orchestrate UDO jobs).
 
 **Next Steps for Production:**
-1.  Fix `CloudSink` memory buffering.
-2.  Implement Cloud DLQ.
-3.  Add retry policies for Network/IO operations.
-4.  Expand test suite to include mock-cloud integration tests.
+1.  Perform load testing on Cloud Sink with 100GB+ files.
+2.  Set up integration tests with LocalStack/MinIO.

@@ -140,7 +140,18 @@ async fn main() -> Result<()> {
             }
             #[cfg(feature = "cloud")]
             udo::core::config::SinkConfig::Cloud { url } => {
-                Box::new(move |s| Ok(Box::new(udo::io::sink::CloudSink::new(&url, s).map_err(|e| udo::UdoError::Pipeline(e.to_string()))?)))
+                Box::new(move |s| {
+                    let url = url.clone();
+                    // We need to block here because sink_factory is synchronous in signature, 
+                    // but CloudSink::new is async. 
+                    // In a real generic pipeline, we might make the factory async or use a handle.
+                    // For CLI context, blocking is acceptable or we need to refactor factory trait.
+                    tokio::task::block_in_place(|| {
+                        tokio::runtime::Handle::current().block_on(async move {
+                            Ok(Box::new(udo::io::sink::CloudSink::new(&url, s).await.map_err(|e| udo::UdoError::Pipeline(e.to_string()))?) as Box<dyn udo::core::pipeline::OutputSink>)
+                        })
+                    })
+                })
             }
         };
 
@@ -150,9 +161,8 @@ async fn main() -> Result<()> {
                     Some(Box::new(udo::io::dlq::FileDlq::new(path).map_err(|e| anyhow::anyhow!(e))?))
                 }
                 #[cfg(feature = "cloud")]
-                udo::core::config::SinkConfig::Cloud { .. } => {
-                    // Cloud DLQ not yet implemented, fallback or fail
-                    None 
+                udo::core::config::SinkConfig::Cloud { url } => {
+                    Some(Box::new(udo::io::dlq::CloudDlq::new(&url).map_err(|e| anyhow::anyhow!(e))?))
                 }
             }
         } else {
@@ -201,7 +211,12 @@ async fn main() -> Result<()> {
             #[cfg(feature = "cloud")]
             {
                 if out_path_clone.starts_with("s3://") || out_path_clone.starts_with("gs://") || out_path_clone.starts_with("az://") {
-                    return Ok(Box::new(udo::io::sink::CloudSink::new(&out_path_clone, s).map_err(|e| udo::UdoError::Pipeline(e.to_string()))?));
+                    let url = out_path_clone.clone();
+                    return tokio::task::block_in_place(|| {
+                        tokio::runtime::Handle::current().block_on(async move {
+                            Ok(Box::new(udo::io::sink::CloudSink::new(&url, s).await.map_err(|e| udo::UdoError::Pipeline(e.to_string()))?) as Box<dyn udo::core::pipeline::OutputSink>)
+                        })
+                    });
                 }
             }
             Ok(Box::new(udo::io::sink::ParquetSink::new(PathBuf::from(&out_path_clone), s).map_err(|e| udo::UdoError::Pipeline(e.to_string()))?))

@@ -71,21 +71,23 @@ impl KafkaSource {
 #[async_trait]
 impl InputSource for KafkaSource {
     async fn next_record(&mut self) -> Result<Option<OwnedValue>> {
-        match self.consumer.recv().await {
-            Ok(msg) => {
-                let payload = msg.payload().unwrap_or_default();
-                match parse_json(payload) {
-                    Ok(val) => Ok(Some(val)),
-                    Err(_) => {
-                        eprintln!("Warning: Skipping corrupted JSON record from Kafka");
-                        Box::pin(self.next_record()).await
+        loop {
+            match self.consumer.recv().await {
+                Ok(msg) => {
+                    let payload = msg.payload().unwrap_or_default();
+                    match parse_json(payload) {
+                        Ok(val) => return Ok(Some(val)),
+                        Err(e) => {
+                            eprintln!("Warning: Skipping corrupted JSON record from Kafka: {}", e);
+                            continue;
+                        }
                     }
                 }
-            }
-            Err(e) => {
-                // Return None on fatal kafka error, or log and continue?
-                // For now, let's treat it as end of stream or fatal
-                Err(UdoError::Kafka(e))
+                Err(e) => {
+                    eprintln!("Error receiving from Kafka: {}", e);
+                    // For now, continue on error. In prod, maybe check if error is fatal.
+                    continue;
+                }
             }
         }
     }

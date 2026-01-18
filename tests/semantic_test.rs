@@ -12,8 +12,14 @@ fn cosine_similarity(v1: &[f32], v2: &[f32]) -> f32 {
 #[test]
 #[cfg(feature = "semantic")]
 fn test_semantic_embedding() {
-    // This test might fail if internet is not available (to download model)
-    let analyzer = IntentAnalyzer::new().expect("Failed to load model");
+    let model_path = if std::path::Path::new("models/semantic").exists() {
+        Some(std::path::PathBuf::from("models/semantic"))
+    } else {
+        None
+    };
+
+    // This test might fail if internet is not available and no local model is found
+    let analyzer = IntentAnalyzer::new(model_path).expect("Failed to load model");
 
     let text1 = "The cat sits on the mat";
     let text2 = "A kitten is resting on the rug"; 
