@@ -13,8 +13,8 @@ pub struct IntentAnalyzer {
 }
 
 impl IntentAnalyzer {
-    pub fn new() -> Result<Self> {
-        let container = BertModelContainer::load("sentence-transformers/all-MiniLM-L6-v2")?;
+    pub fn new(model_path: Option<std::path::PathBuf>) -> Result<Self> {
+        let container = BertModelContainer::load("sentence-transformers/all-MiniLM-L6-v2", model_path)?;
         Ok(Self { container })
     }
 

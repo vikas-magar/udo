@@ -4,7 +4,9 @@ use std::sync::Arc;
 use std::time::Instant;
 use simd_json::OwnedValue;
 use anyhow::{Context, Result, bail};
-use tracing::{info, error};
+use tracing::info;
+#[cfg(feature = "db")]
+use tracing::error;
 use tracing_subscriber;
 
 use arrow::datatypes::Schema;
@@ -72,6 +74,14 @@ struct RunArgs {
     /// Use NER for advanced PII detection (Name, Loc, Org)
     #[arg(long, default_value_t = false)]
     pii_ner: bool,
+
+    /// Local path to NER model directory (contains config.json, tokenizer.json, model.safetensors)
+    #[arg(long)]
+    ner_model_path: Option<PathBuf>,
+
+    /// Local path to Semantic model directory
+    #[arg(long)]
+    semantic_model_path: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -108,17 +118,17 @@ async fn main() -> Result<()> {
         let mut procs: Vec<Box<dyn udo::core::pipeline::DataProcessor>> = Vec::new();
         for p_cfg in config.processors {
             match p_cfg {
-                udo::core::config::ProcessorConfig::PiiMasker { mode, use_ner: _use_ner } => {
+                udo::core::config::ProcessorConfig::PiiMasker { mode, use_ner: _use_ner, model_path: _model_path } => {
                     procs.push(Box::new(udo::processors::pii::PiiMasker::new(&mode).map_err(|e| anyhow::anyhow!(e))?));
                     #[cfg(feature = "ner")]
                     if _use_ner {
-                        let ner_analyzer = udo::processors::ner::NerAnalyzer::new().map_err(|e| anyhow::anyhow!(e))?;
+                        let ner_analyzer = udo::processors::ner::NerAnalyzer::new(_model_path).map_err(|e| anyhow::anyhow!(e))?;
                         procs.push(Box::new(udo::processors::pii::NerPiiMasker::new(ner_analyzer, &mode)));
                     }
                 }
                 #[cfg(feature = "semantic")]
-                udo::core::config::ProcessorConfig::SemanticPruner { query, threshold } => {
-                    let analyzer = IntentAnalyzer::new().map_err(|e| anyhow::anyhow!(e))?;
+                udo::core::config::ProcessorConfig::SemanticPruner { query, threshold, model_path } => {
+                    let analyzer = IntentAnalyzer::new(model_path).map_err(|e| anyhow::anyhow!(e))?;
                     procs.push(Box::new(SemanticProcessor::new(analyzer, query, threshold)));
                 }
             }
@@ -174,14 +184,14 @@ async fn main() -> Result<()> {
             procs.push(Box::new(udo::processors::pii::PiiMasker::new(&args.pii_mode).map_err(|e| anyhow::anyhow!(e))?));
             #[cfg(feature = "ner")]
             if args.pii_ner {
-                let ner_analyzer = udo::processors::ner::NerAnalyzer::new().map_err(|e| anyhow::anyhow!(e))?;
+                let ner_analyzer = udo::processors::ner::NerAnalyzer::new(args.ner_model_path.clone()).map_err(|e| anyhow::anyhow!(e))?;
                 procs.push(Box::new(udo::processors::pii::NerPiiMasker::new(ner_analyzer, &args.pii_mode)));
             }
         }
 
         #[cfg(feature = "semantic")]
         if let Some(query) = &args.query {
-            let analyzer = IntentAnalyzer::new().map_err(|e| anyhow::anyhow!(e))?;
+            let analyzer = IntentAnalyzer::new(args.semantic_model_path.clone()).map_err(|e| anyhow::anyhow!(e))?;
             procs.push(Box::new(SemanticProcessor::new(analyzer, query.clone(), args.sim_threshold)));
         }
 

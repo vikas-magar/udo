@@ -9,8 +9,8 @@ pub struct NerAnalyzer {
 }
 
 impl NerAnalyzer {
-    pub fn new() -> Result<Self> {
-        let container = BertModelContainer::load("dbmdz/bert-large-cased-finetuned-conll03-english")?;
+    pub fn new(model_path: Option<std::path::PathBuf>) -> Result<Self> {
+        let container = BertModelContainer::load("dbmdz/bert-large-cased-finetuned-conll03-english", model_path)?;
 
         let labels = vec![
             "O".to_string(),

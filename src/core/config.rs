@@ -30,13 +30,17 @@ pub enum ProcessorConfig {
     PiiMasker { 
         mode: String,
         #[serde(default)]
-        use_ner: bool 
+        use_ner: bool,
+        #[serde(default)]
+        model_path: Option<PathBuf>
     },
     #[cfg(feature = "semantic")]
     SemanticPruner { 
         query: String, 
         #[serde(default = "default_threshold")]
-        threshold: f32 
+        threshold: f32,
+        #[serde(default)]
+        model_path: Option<PathBuf>
     },
 }
 
