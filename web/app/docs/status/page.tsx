@@ -61,7 +61,7 @@ export default function ProjectStatus() {
             <strong className="text-white">Semantic Schema Optimization:</strong> Prunes columns based on intent.
           </li>
         </ol>
-
+      </main>
     </div>
   );
 }
