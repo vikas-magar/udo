@@ -8,13 +8,18 @@ export default function ConfigPage() {
         <h1 className="text-2xl font-bold text-blue-500 mb-8 tracking-tighter">UDO</h1>
         <ul className="space-y-4">
           <li>
-            <Link href="/" className="block p-3 text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg transition">
+            <Link href="/dashboard" className="block p-3 text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg transition">
               Dashboard
             </Link>
           </li>
           <li>
             <Link href="/config" className="block p-3 bg-gray-700 rounded-lg text-white font-medium">
               Configuration
+            </Link>
+          </li>
+          <li>
+            <Link href="/" className="block p-3 text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg transition">
+              Home
             </Link>
           </li>
           <li>
