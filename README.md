@@ -12,7 +12,7 @@ UDO is a high-performance, Rust-based data pipeline tool focused on compliance (
 
 ### 1. Build
 ```bash
-car go build --release
+cargo build --release
 ```
 
 ### 2. Run with Local Models (Air-Gapped)
