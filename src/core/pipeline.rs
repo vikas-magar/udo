@@ -33,107 +33,349 @@ pub trait DlqSink: Send + Sync {
     async fn write_dead_letter(&mut self, record: OwnedValue, reason: String) -> Result<()>;
 }
 
+pub type SinkFactory =
+
+    Box<dyn Fn(Arc<Schema>) -> Result<Box<dyn OutputSink>> + Send + Sync + 'static>;
+
+
+
 pub struct PipelineRunner {
+
     source: Box<dyn InputSource>,
+
     processors: Vec<Box<dyn DataProcessor>>,
-    sink_factory: Option<Box<dyn Fn(Arc<Schema>) -> Result<Box<dyn OutputSink>> + Send + Sync>>,
+
+    sink_factory: Option<SinkFactory>,
+
     sink: Option<Box<dyn OutputSink>>,
+
     dlq: Option<Box<dyn DlqSink>>,
+
     batch_size: usize,
+
     warmup_rows: usize,
+
 }
 
+
+
 impl PipelineRunner {
+
     pub fn new(source: Box<dyn InputSource>, batch_size: usize) -> Self {
+
         Self {
+
             source,
+
             processors: Vec::new(),
+
             sink_factory: None,
+
             sink: None,
+
             dlq: None,
+
             batch_size,
+
             warmup_rows: 100,
+
         }
+
     }
+
+
 
     pub fn set_dlq(&mut self, dlq: Box<dyn DlqSink>) {
+
         self.dlq = Some(dlq);
+
     }
+
+
 
     pub fn set_warmup_rows(&mut self, rows: usize) {
+
         self.warmup_rows = rows;
+
     }
+
+
 
     pub fn add_processor(&mut self, processor: Box<dyn DataProcessor>) {
+
         self.processors.push(processor);
+
     }
+
+
 
     pub fn set_sink_factory<F>(&mut self, factory: F)
+
     where
+
         F: Fn(Arc<Schema>) -> Result<Box<dyn OutputSink>> + Send + Sync + 'static,
+
     {
+
         self.sink_factory = Some(Box::new(factory));
+
     }
 
-    pub async fn run(&mut self, mut initial_schema: Option<Arc<Schema>>) -> Result<()> {
-        let mut total_rows = 0;
 
-        if initial_schema.is_none() {
-            info!(warmup_limit = %self.warmup_rows, "Starting adaptive warm-up phase");
-            let mut warmup_records = Vec::new();
-            while warmup_records.len() < self.warmup_rows {
-                match self.source.next_record().await {
-                    Ok(Some(record)) => warmup_records.push(record),
-                    Ok(None) => break,
-                    Err(e) => {
-                        error!(error = %e, "Source error during warm-up");
-                        return Err(e);
+
+            pub async fn run(&mut self, initial_schema: Option<Arc<Schema>>) -> Result<()> {
+
+
+
+                let (mut current_schema, total_rows) = if let Some(schema) = &initial_schema {
+
+
+
+                    (schema.clone(), 0)
+
+
+
+                } else {
+
+
+
+                    info!(
+
+
+
+                        warmup_limit = %self.warmup_rows,
+
+
+
+                        "Starting adaptive warm-up phase"
+
+
+
+                    );
+
+
+
+                    let mut warmup_records = Vec::new();
+
+
+
+                    while warmup_records.len() < self.warmup_rows {
+
+
+
+                        match self.source.next_record().await {
+
+
+
+                            Ok(Some(record)) => warmup_records.push(record),
+
+
+
+                            Ok(None) => break,
+
+
+
+                            Err(e) => {
+
+
+
+                                error!(error = %e, "Source error during warm-up");
+
+
+
+                                return Err(e);
+
+
+
+                            }
+
+
+
+                        }
+
+
+
                     }
+
+
+
+        
+
+
+
+                    if warmup_records.is_empty() {
+
+
+
+                        return Err(UdoError::Pipeline(
+
+
+
+                            "Source yielded no records during warm-up".to_string(),
+
+
+
+                        ));
+
+
+
+                    }
+
+
+
+        
+
+
+
+                    let schema_array = OwnedValue::Array(warmup_records.clone());
+
+
+
+                    let mut schema = Arc::new(infer_schema(&schema_array, None)?);
+
+
+
+        
+
+
+
+                    for proc in &self.processors {
+
+
+
+                        schema = proc.update_schema(&schema)?;
+
+
+
+                    }
+
+
+
+        
+
+
+
+                    if let Some(factory) = &self.sink_factory {
+
+
+
+                        self.sink = Some(factory(schema.clone())?);
+
+
+
+                    }
+
+
+
+        
+
+
+
+                    let mut processed_warmup = Vec::new();
+
+
+
+                    for record in warmup_records {
+
+
+
+                        if let Some(rec) = self.process_record_sequential(record).await? {
+
+
+
+                            processed_warmup.push(rec);
+
+
+
+                        }
+
+
+
+                    }
+
+
+
+        
+
+
+
+                    let mut rows = 0;
+
+
+
+                    if !processed_warmup.is_empty() {
+
+
+
+                        self.flush_to_sink(&processed_warmup, &schema).await?;
+
+
+
+                        rows = processed_warmup.len();
+
+
+
+                    }
+
+
+
+        
+
+
+
+                    (schema, rows)
+
+
+
+                };
+
+
+
+        
+
+
+
+                if initial_schema.is_some() {
+
+
+
+                    for proc in &self.processors {
+
+
+
+                        current_schema = proc.update_schema(&current_schema)?;
+
+
+
+                    }
+
+
+
+                    if let Some(factory) = &self.sink_factory {
+
+
+
+                        self.sink = Some(factory(current_schema.clone())?);
+
+
+
+                    }
+
+
+
                 }
-            }
 
-            if warmup_records.is_empty() {
-                return Err(UdoError::Pipeline(
-                    "Source yielded no records during warm-up".to_string(),
-                ));
-            }
 
-            let schema_array = OwnedValue::Array(warmup_records.clone());
-            initial_schema = Some(Arc::new(infer_schema(&schema_array, None)?));
 
-            let mut current_schema = initial_schema.unwrap();
-            for proc in &self.processors {
-                current_schema = proc.update_schema(&current_schema)?;
-            }
+        
 
-            if let Some(factory) = &self.sink_factory {
-                self.sink = Some(factory(current_schema.clone())?);
-            }
 
-            let mut processed_warmup = Vec::new();
-            for record in warmup_records {
-                if let Some(rec) = self.process_record_sequential(record).await? {
-                    processed_warmup.push(rec);
-                }
-            }
-            if !processed_warmup.is_empty() {
-                self.flush_to_sink(&processed_warmup, &current_schema)
-                    .await?;
-                total_rows += processed_warmup.len();
-            }
 
-            self.run_main_loop(current_schema, total_rows).await
-        } else {
-            let mut current_schema = initial_schema.unwrap();
-            for proc in &self.processors {
-                current_schema = proc.update_schema(&current_schema)?;
+                self.run_main_loop(current_schema, total_rows).await
+
+
+
             }
-            if let Some(factory) = &self.sink_factory {
-                self.sink = Some(factory(current_schema.clone())?);
-            }
-            self.run_main_loop(current_schema, 0).await
-        }
-    }
 
     async fn process_record_sequential(
         &self,

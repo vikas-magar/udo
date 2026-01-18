@@ -9,7 +9,7 @@ use std::path::PathBuf;
 #[cfg(feature = "cloud")]
 use object_store::path::Path as ObjectPath;
 #[cfg(feature = "cloud")]
-use object_store::{parse_url, ObjectStore};
+use object_store::{parse_url, ObjectStore, ObjectStoreExt};
 #[cfg(feature = "cloud")]
 use std::sync::Arc;
 #[cfg(feature = "cloud")]

@@ -4,8 +4,8 @@ use udo::core::schema::infer_schema;
 
 #[test]
 fn test_schema_drift_new_field() {
-    let row1: OwnedValue = json!({"a": 1, "b": "foo"}).into();
-    let row2: OwnedValue = json!({"a": 2, "c": 3.0}).into();
+    let row1: OwnedValue = json!({"a": 1, "b": "foo"});
+    let row2: OwnedValue = json!({"a": 2, "c": 3.0});
     let data: OwnedValue = vec![row1, row2].into();
 
     let schema = infer_schema(&data, None).unwrap();
@@ -22,8 +22,8 @@ fn test_schema_drift_new_field() {
 
 #[test]
 fn test_type_widening() {
-    let row1: OwnedValue = json!({"a": 1}).into();
-    let row2: OwnedValue = json!({"a": 2.5}).into();
+    let row1: OwnedValue = json!({"a": 1});
+    let row2: OwnedValue = json!({"a": 2.5});
     let data: OwnedValue = vec![row1, row2].into();
 
     let schema = infer_schema(&data, None).unwrap();

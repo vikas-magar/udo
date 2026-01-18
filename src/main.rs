@@ -7,10 +7,8 @@ use std::time::Instant;
 #[cfg(feature = "db")]
 use tracing::error;
 use tracing::info;
-use tracing_subscriber;
 
-use arrow::datatypes::Schema;
-use udo::core::pipeline::InputSource;
+use udo::core::pipeline::{InputSource, SinkFactory};
 
 use clap::Subcommand;
 #[cfg(feature = "db")]
@@ -159,11 +157,7 @@ async fn main() -> Result<()> {
                 }
             }
 
-            let sink_factory: Box<
-                dyn Fn(Arc<Schema>) -> Result<Box<dyn udo::core::pipeline::OutputSink>>
-                    + Send
-                    + Sync,
-            > = match config.sink {
+            let sink_factory: SinkFactory = match config.sink {
                 udo::core::config::SinkConfig::File { path } => Box::new(move |s| {
                     Ok(Box::new(
                         udo::io::sink::ParquetSink::new(path.clone(), s)
@@ -269,11 +263,7 @@ async fn main() -> Result<()> {
 
             let out_path_str = output_path.to_string_lossy().to_string();
             let out_path_clone = out_path_str.clone();
-            let sink_factory: Box<
-                dyn Fn(Arc<Schema>) -> Result<Box<dyn udo::core::pipeline::OutputSink>>
-                    + Send
-                    + Sync,
-            > = Box::new(move |s| {
+            let sink_factory: SinkFactory = Box::new(move |s| {
                 #[cfg(feature = "cloud")]
                 {
                     if out_path_clone.starts_with("s3://")

@@ -7,13 +7,15 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 #[cfg(feature = "cloud")]
-use object_store::path::Path as ObjectPath;
+use object_store::parse_url;
 #[cfg(feature = "cloud")]
-use object_store::{parse_url, ObjectStore};
+use object_store::path::Path as ObjectPath;
 #[cfg(feature = "cloud")]
 use parquet::arrow::AsyncArrowWriter;
 #[cfg(feature = "cloud")]
 use tokio::io::AsyncWrite;
+#[cfg(feature = "cloud")]
+use tokio::sync::Mutex as TokioMutex;
 #[cfg(feature = "cloud")]
 use url::Url;
 
@@ -58,8 +60,11 @@ impl OutputSink for ParquetSink {
 }
 
 #[cfg(feature = "cloud")]
+pub type CloudWriter = AsyncArrowWriter<Box<dyn AsyncWrite + Send + Unpin>>;
+
+#[cfg(feature = "cloud")]
 pub struct CloudSink {
-    writer: AsyncArrowWriter<Box<dyn AsyncWrite + Send + Unpin>>,
+    writer: Arc<TokioMutex<Option<CloudWriter>>>,
     path: ObjectPath,
 }
 
@@ -69,16 +74,15 @@ impl CloudSink {
         let url = Url::parse(url_str)?;
         let (store, path) = parse_url(&url)?;
 
-        // Initiate multipart upload
-        let (_id, multipart_writer) = store
-            .put_multipart(&path)
-            .await
-            .map_err(|e| UdoError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+        let async_writer: Box<dyn AsyncWrite + Send + Unpin> =
+            Box::new(object_store::buffered::BufWriter::new(store.into(), path.clone()));
+        let writer =
+            AsyncArrowWriter::try_new(async_writer, schema, None).map_err(UdoError::Parquet)?;
 
-        let writer = AsyncArrowWriter::try_new(Box::new(multipart_writer), schema, None)
-            .map_err(UdoError::Parquet)?;
-
-        Ok(Self { writer, path })
+        Ok(Self {
+            writer: Arc::new(TokioMutex::new(Some(writer))),
+            path,
+        })
     }
 }
 
@@ -86,13 +90,19 @@ impl CloudSink {
 #[async_trait]
 impl OutputSink for CloudSink {
     async fn write_batch(&mut self, batch: RecordBatch) -> Result<()> {
-        self.writer.write(&batch).await.map_err(UdoError::Parquet)?;
+        let mut guard = self.writer.lock().await;
+        if let Some(writer) = guard.as_mut() {
+            writer.write(&batch).await.map_err(UdoError::Parquet)?;
+        }
         Ok(())
     }
 
     async fn close(&mut self) -> Result<()> {
-        self.writer.close().await.map_err(UdoError::Parquet)?;
-        println!("Uploaded optimized data to cloud: {}", self.path);
+        let mut guard = self.writer.lock().await;
+        if let Some(writer) = guard.take() {
+            writer.close().await.map_err(UdoError::Parquet)?;
+            println!("Uploaded optimized data to cloud: {}", self.path);
+        }
         Ok(())
     }
 }

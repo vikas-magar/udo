@@ -13,7 +13,7 @@ fn test_cli_ndjson_resiliency() {
     let output_path = output_file.path().to_str().unwrap().to_string();
 
     let status = std::process::Command::new("cargo")
-        .args(&[
+        .args([
             "run",
             "--bin",
             "udo-cli",

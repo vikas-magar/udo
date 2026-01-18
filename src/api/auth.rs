@@ -24,21 +24,17 @@ impl FromRequest for User {
     ) -> Self::Future {
         let auth = BearerAuth::from_request(req, payload).into_inner();
 
-        match auth {
-            Ok(bearer) => {
-                let token = bearer.token();
-                let admin_key =
-                    env::var("UDO_ADMIN_KEY").unwrap_or_else(|_| "admin-secret".to_string());
-                let viewer_key =
-                    env::var("UDO_VIEWER_KEY").unwrap_or_else(|_| "viewer-secret".to_string());
+        if let Ok(bearer) = auth {
+            let token = bearer.token();
+            let admin_key = env::var("UDO_ADMIN_KEY").unwrap_or_else(|_| "admin-secret".to_string());
+            let viewer_key =
+                env::var("UDO_VIEWER_KEY").unwrap_or_else(|_| "viewer-secret".to_string());
 
-                if token == admin_key {
-                    return ready(Ok(User { role: Role::Admin }));
-                } else if token == viewer_key {
-                    return ready(Ok(User { role: Role::Viewer }));
-                }
+            if token == admin_key {
+                return ready(Ok(User { role: Role::Admin }));
+            } else if token == viewer_key {
+                return ready(Ok(User { role: Role::Viewer }));
             }
-            Err(_) => {}
         }
 
         ready(Err(actix_web::error::ErrorUnauthorized(
