@@ -37,3 +37,22 @@ Ensure you have the models downloaded in `models/`.
 cargo test
 ```
 
+## Web Interface
+
+UDO includes a modern web interface with a **Project Landing Page** and an **Operational Dashboard**.
+
+### Features
+- **Landing Page:** Professional product showcase (located at `/`).
+- **Dashboard:** Real-time metrics monitoring (throughput, latency, tokens saved) (located at `/dashboard`).
+- **Configuration:** Visual configuration manager (located at `/config`).
+
+### Running the Web UI
+
+```bash
+cd web
+npm install
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) to view the landing page.
+Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard) to view the metrics dashboard.
+
