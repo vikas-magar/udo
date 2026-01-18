@@ -88,7 +88,7 @@ impl OutputSink for CsvSink {
     async fn close(&mut self) -> Result<()> {
         // csv::Writer doesn't need explicit close, dropping handles it, but we can flush
         let mut guard = self.writer.lock().map_err(|_| UdoError::Pipeline("CsvSink mutex poisoned".to_string()))?;
-        if let Some(_) = guard.take() {
+        if guard.take().is_some() {
             // dropped
         }
         Ok(())
