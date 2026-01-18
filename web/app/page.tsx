@@ -15,7 +15,7 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-300">
             <a href="#features" className="hover:text-white transition">Features</a>
             <a href="#how-it-works" className="hover:text-white transition">How it Works</a>
-            <a href="https://github.com/your-org/udo" target="_blank" className="hover:text-white transition">GitHub</a>
+            <a href="https://github.com/vikas-magar/udo" target="_blank" className="hover:text-white transition">GitHub</a>
           </div>
           <div>
             <Link 
@@ -45,13 +45,12 @@ export default function LandingPage() {
             >
               Get Started
             </Link>
-            <a 
-              href="https://github.com/your-org/udo" 
-              target="_blank"
+            <Link 
+              href="/docs" 
               className="px-8 py-4 rounded-lg border border-gray-700 hover:bg-gray-900 text-gray-300 font-medium text-lg transition"
             >
               View Documentation
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -99,35 +98,46 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Code Snippet / How it works */}
-      <section id="how-it-works" className="py-24 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Simple Configuration</h2>
-              <p className="text-gray-400 mb-8 text-lg">
-                Define your pipeline in a simple YAML file. UDO handles the complexity of model loading, schema inference, and parallel execution.
-              </p>
-              <ul className="space-y-4 text-gray-300">
-                <li className="flex items-center">
-                  <span className="text-blue-500 mr-3">✓</span> Human-readable configuration
-                </li>
-                <li className="flex items-center">
-                  <span className="text-blue-500 mr-3">✓</span> Natural language queries for data slicing
-                </li>
-                <li className="flex items-center">
-                  <span className="text-blue-500 mr-3">✓</span> Zero-code PII protection
-                </li>
-              </ul>
-            </div>
-            <div className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 shadow-2xl">
-              <div className="flex items-center space-x-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
+      {/* How it Works */}
+      <section id="how-it-works" className="py-24 px-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-blue-900/5 opacity-20 pointer-events-none"></div>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">How UDO Works</h2>
+            <p className="text-gray-400">A seamless pipeline from raw data to clean, optimized context.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-12 mb-20">
+            <StepCard 
+              step="01"
+              title="Connect & Ingest"
+              description="Connect to S3 buckets, Kafka topics, or local files. UDO streams data using zero-copy Apache Arrow buffers."
+            />
+            <StepCard 
+              step="02"
+              title="Analyze & Mask"
+              description="Local BERT models identify PII and semantic relevance. Irrelevant columns are dropped; sensitive data is masked."
+            />
+            <StepCard 
+              step="03"
+              title="Deliver & Monitor"
+              description="Optimized Parquet files are written to your sink. Real-time metrics are pushed to the dashboard."
+            />
+          </div>
+
+          <div className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 shadow-2xl max-w-4xl mx-auto">
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
+              <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <span className="ml-2 text-xs text-gray-500 font-mono">config.yaml</span>
               </div>
-              <pre className="p-6 text-sm font-mono overflow-x-auto text-gray-300 leading-relaxed">
+              <span className="text-xs text-gray-500 font-mono">config.yaml</span>
+            </div>
+            <div className="grid md:grid-cols-2">
+              <div className="p-6 border-r border-gray-800 bg-gray-900/50">
+                <h4 className="text-sm font-semibold text-blue-400 mb-4 uppercase tracking-wider">Pipeline Config</h4>
+                <pre className="text-xs font-mono text-gray-300 leading-relaxed overflow-x-auto">
 {`processors:
   - type: pii_masker
     mode: "mask"
@@ -141,7 +151,25 @@ export default function LandingPage() {
 sink:
   type: cloud
   url: "s3://my-bucket/clean-data/"`}
-              </pre>
+                </pre>
+              </div>
+              <div className="p-6 flex flex-col justify-center">
+                <h4 className="text-sm font-semibold text-green-400 mb-4 uppercase tracking-wider">Result</h4>
+                <ul className="space-y-3 text-sm text-gray-400">
+                  <li className="flex items-start">
+                    <span className="text-green-500 mr-2">✓</span> 
+                    <span>PII (Names, Emails) redacted via NER</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-green-500 mr-2">✓</span> 
+                    <span>Columns irrelevant to "browser behavior" dropped</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-green-500 mr-2">✓</span> 
+                    <span>Output optimized for Analytics/LLM Context</span>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
@@ -161,6 +189,16 @@ function FeatureCard({ icon, title, description }: { icon: string, title: string
       <div className="text-4xl mb-6 group-hover:scale-110 transition duration-300">{icon}</div>
       <h3 className="text-xl font-bold mb-3 text-white">{title}</h3>
       <p className="text-gray-400 leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
+function StepCard({ step, title, description }: { step: string, title: string, description: string }) {
+  return (
+    <div className="relative p-8 rounded-2xl bg-zinc-900 border border-white/5 hover:bg-zinc-800 transition">
+      <div className="text-5xl font-bold text-blue-900/20 absolute top-4 right-4">{step}</div>
+      <h3 className="text-xl font-bold mb-3 text-white relative z-10">{title}</h3>
+      <p className="text-gray-400 leading-relaxed relative z-10">{description}</p>
     </div>
   );
 }
