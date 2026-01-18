@@ -112,6 +112,12 @@ async fn main() -> Result<()> {
                 udo::core::config::SourceConfig::File { path } => {
                     Box::new(udo::io::source::FileSource::new(path).await?)
                 }
+                udo::core::config::SourceConfig::Csv { path } => {
+                    Box::new(udo::io::source::CsvSource::new(path)?)
+                }
+                udo::core::config::SourceConfig::Avro { path } => {
+                    Box::new(udo::io::source::AvroSource::new(path)?)
+                }
                 #[cfg(feature = "kafka")]
                 udo::core::config::SourceConfig::Kafka {
                     brokers,
@@ -164,6 +170,18 @@ async fn main() -> Result<()> {
                             .map_err(|e| udo::UdoError::Pipeline(e.to_string()))?,
                     ))
                 }),
+                udo::core::config::SinkConfig::Csv { path } => Box::new(move |_s| {
+                    Ok(Box::new(
+                        udo::io::sink::CsvSink::new(path.clone())
+                            .map_err(|e| udo::UdoError::Pipeline(e.to_string()))?,
+                    ))
+                }),
+                udo::core::config::SinkConfig::Avro { path } => Box::new(move |s| {
+                    Ok(Box::new(
+                        udo::io::sink::AvroSink::new(path.clone(), s)
+                            .map_err(|e| udo::UdoError::Pipeline(e.to_string()))?,
+                    ))
+                }),
                 #[cfg(feature = "cloud")]
                 udo::core::config::SinkConfig::Cloud { url } => {
                     Box::new(move |s| {
@@ -196,6 +214,7 @@ async fn main() -> Result<()> {
                         udo::core::config::SinkConfig::Cloud { url } => Some(Box::new(
                             udo::io::dlq::CloudDlq::new(&url).map_err(|e| anyhow::anyhow!(e))?,
                         )),
+                        _ => None, // CSV/Avro DLQ not supported yet
                     }
                 } else {
                     None

@@ -22,6 +22,12 @@ pub enum SourceConfig {
     File {
         path: PathBuf,
     },
+    Csv {
+        path: PathBuf,
+    },
+    Avro {
+        path: PathBuf,
+    },
     #[cfg(feature = "kafka")]
     Kafka {
         brokers: String,
@@ -59,6 +65,12 @@ fn default_threshold() -> f32 {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum SinkConfig {
     File {
+        path: PathBuf,
+    },
+    Csv {
+        path: PathBuf,
+    },
+    Avro {
         path: PathBuf,
     },
     #[cfg(feature = "cloud")]

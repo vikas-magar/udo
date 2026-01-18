@@ -1,8 +1,13 @@
 use crate::core::error::{Result, UdoError};
 use crate::core::pipeline::InputSource;
 use crate::utils::json::parse_json;
+use apache_avro::Reader as AvroReader;
+use arrow::csv;
+use arrow::json::LineDelimitedWriter;
 use async_trait::async_trait;
 use simd_json::OwnedValue;
+use std::collections::VecDeque;
+use std::fs::File as StdFile;
 use std::path::PathBuf;
 use tokio::fs::File;
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -48,6 +53,85 @@ impl InputSource for FileSource {
                 eprintln!("Warning: Skipping corrupted JSON record");
                 Box::pin(self.next_record()).await
             }
+        }
+    }
+}
+
+pub struct CsvSource {
+    reader: csv::Reader<StdFile>,
+    buffer: VecDeque<OwnedValue>,
+}
+
+impl CsvSource {
+    pub fn new(path: PathBuf) -> Result<Self> {
+        let file = StdFile::open(path).map_err(UdoError::Io)?;
+        let reader = csv::ReaderBuilder::new(std::sync::Arc::new(arrow::datatypes::Schema::empty())) // Schema will be inferred
+            .with_header(true)
+            .build(file)
+            .map_err(UdoError::Arrow)?;
+        
+        Ok(Self {
+            reader,
+            buffer: VecDeque::new(),
+        })
+    }
+}
+
+#[async_trait]
+impl InputSource for CsvSource {
+    async fn next_record(&mut self) -> Result<Option<OwnedValue>> {
+        if let Some(record) = self.buffer.pop_front() {
+            return Ok(Some(record));
+        }
+
+        match self.reader.next() {
+            Some(Ok(batch)) => {
+                let mut buf = Vec::new();
+                let mut writer = LineDelimitedWriter::new(&mut buf);
+                writer.write(&batch).map_err(UdoError::Arrow)?;
+                writer.finish().map_err(UdoError::Arrow)?;
+                drop(writer);
+
+                let s = String::from_utf8(buf).map_err(|e| UdoError::Unknown(e.to_string()))?;
+                for line in s.lines() {
+                    let mut line_bytes = line.as_bytes().to_vec();
+                    let owned = simd_json::to_owned_value(&mut line_bytes).map_err(UdoError::JsonParse)?;
+                    self.buffer.push_back(owned);
+                }
+                
+                self.buffer.pop_front().map(|r| Ok(Some(r))).unwrap_or(Ok(None))
+            }
+            Some(Err(e)) => Err(UdoError::Arrow(e)),
+            None => Ok(None),
+        }
+    }
+}
+
+pub struct AvroSource {
+    reader: AvroReader<'static, StdFile>,
+}
+
+impl AvroSource {
+    pub fn new(path: PathBuf) -> Result<Self> {
+        let file = StdFile::open(path).map_err(UdoError::Io)?;
+        let reader = AvroReader::new(file).map_err(|e| UdoError::Unknown(e.to_string()))?;
+        Ok(Self { reader })
+    }
+}
+
+#[async_trait]
+impl InputSource for AvroSource {
+    async fn next_record(&mut self) -> Result<Option<OwnedValue>> {
+        match self.reader.next() {
+            Some(Ok(value)) => {
+                let json_val: serde_json::Value = apache_avro::from_value(&value).map_err(|e| UdoError::Unknown(e.to_string()))?;
+                let s = serde_json::to_string(&json_val).map_err(|e| UdoError::Unknown(e.to_string()))?;
+                let mut bytes = s.into_bytes();
+                let owned = simd_json::to_owned_value(&mut bytes).map_err(UdoError::JsonParse)?;
+                Ok(Some(owned))
+            }
+            Some(Err(e)) => Err(UdoError::Unknown(e.to_string())),
+            None => Ok(None),
         }
     }
 }
